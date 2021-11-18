@@ -47,7 +47,7 @@ namespace parser {
     }
 
     template<typename K, typename V>
-    std::map<V, K> inverse_map(const std::map<K, V> &map) {
+    std::map<V, K> invert_map(const std::map<K, V> &map) {
       std::map<V, K> rmap;
       for (auto const& kv : map)
         rmap[kv.second] = kv.first;
@@ -72,7 +72,7 @@ namespace parser {
       {"(",  Operator::Lbr},
       {")",  Operator::Rbr}
     };
-    const std::map<Operator, std::string> operator_to_token = inverse_map(token_to_operator);
+    const std::map<Operator, std::string> operator_to_token = invert_map(token_to_operator);
     const std::map<Operator, std::function<double(double, double)>> operator_to_fn {
       {Operator::And, [](double a, double b) { return (int)a & (int)b; }},
       {Operator::Or,  [](double a, double b) { return (int)a | (int)b; }},

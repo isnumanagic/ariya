@@ -5,17 +5,23 @@ source_filename = "main.ll"
 
 define i32 @main() {
 entry:
-  %0 = fmul double 2.000000e+00, 4.000000e+00
-  %1 = fneg double %0
-  %2 = call double @pow(double 3.000000e+00, double 4.000000e+00)
-  %3 = fdiv double %2, 2.000000e+01
-  %4 = fadd double %1, %3
-  %5 = fptosi double 1.000000e+00 to i32
-  %6 = fptosi double 4.000000e+00 to i32
-  %7 = shl i32 %5, %6
-  %8 = sitofp i32 %7 to double
-  %9 = fsub double %4, %8
-  %10 = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([15 x i8], [15 x i8]* @0, i32 0, i32 0), double %9)
+  %0 = fneg double 1.000000e+00
+  %1 = fadd double 6.000000e+00, 2.000000e+00
+  %2 = fmul double 5.000000e+00, %1
+  %3 = fadd double %0, %2
+  %4 = fdiv double 1.200000e+01, 4.000000e+00
+  %5 = fsub double %3, %4
+  %6 = call double @pow(double 2.000000e+00, double 4.000000e+00)
+  %7 = fadd double %5, %6
+  %8 = fadd double %7, 0x400921FB54442D18
+  %9 = fmul double 0x4005BF0A8B145769, 1.010000e-01
+  %10 = fsub double %8, %9
+  %11 = fptosi double 1.000000e+00 to i32
+  %12 = fptosi double 5.000000e+00 to i32
+  %13 = shl i32 %11, %12
+  %14 = sitofp i32 %13 to double
+  %15 = fsub double %10, %14
+  %16 = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([15 x i8], [15 x i8]* @0, i32 0, i32 0), double %15)
   ret i32 0
 }
 

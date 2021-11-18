@@ -307,109 +307,100 @@ namespace parser {
 
 namespace llir {
   namespace {
-    static llvm::LLVMContext context;
-    static llvm::IRBuilder<llvm::NoFolder> builder(context);
-    static llvm::Module module("main.ll", context);
+    static auto context = std::make_shared<llvm::LLVMContext>();
+    static auto builder = std::make_shared<llvm::IRBuilder<llvm::NoFolder>>(*context);
+    static auto module  = std::make_shared<llvm::Module>("main.ll", *context);
     
-    static const auto t_char_ptr = []() { return llvm::Type::getInt8PtrTy(context); };
-    static const auto t_int32 = []() { return llvm::Type::getInt32Ty(context); };
-    static const auto t_int64 = []() { return llvm::Type::getInt64Ty(context); };
-    static const auto t_double = []() { return llvm::Type::getDoubleTy(context); };
+    static const auto t_char_ptr = []() { return llvm::Type::getInt8PtrTy(*context); };
+    static const auto t_int32 = []() { return llvm::Type::getInt32Ty(*context); };
+    static const auto t_int64 = []() { return llvm::Type::getInt64Ty(*context); };
+    static const auto t_double = []() { return llvm::Type::getDoubleTy(*context); };
 
-    llvm::Value* int_operator(std::function<llvm::Value*(llvm::Value*, llvm::Value*)> fn, llvm::Value *a, llvm::Value *b) {
-      auto a_i = builder.CreateFPToSI(a, t_int32());
-      auto b_i = builder.CreateFPToSI(b, t_int32());
-      auto r_i = fn(a_i, b_i);
-      return builder.CreateSIToFP(r_i, t_double());
+    #define as_int(fn, a, b) ({                         \
+      auto a_i = builder->CreateFPToSI((a), t_int32()); \
+      auto b_i = builder->CreateFPToSI((b), t_int32()); \
+      auto r_i = builder->fn(a_i, b_i);                 \
+      builder->CreateSIToFP(r_i, t_double());           \
+    })
+
+    std::function<llvm::Function*()> declare_fn(std::function<llvm::Function*()> init) {
+      llvm::Function *fn_ptr = nullptr;
+      return [=]() mutable {
+        if (!fn_ptr) fn_ptr = init();
+        return fn_ptr;
+      };
     }
 
-    llvm::Function *pow_proto() {
-      auto pow = llvm::Function::Create(
-          llvm::FunctionType::get(t_double(), { t_double(), t_double() }, false),
-          llvm::GlobalValue::ExternalLinkage,
-          "pow",
-          module
-        );
-      pow->setCallingConv(llvm::CallingConv::C);
-      return pow;
-    }
+    auto ir_pow = declare_fn([]() {
+      return llvm::Function::Create(
+        llvm::FunctionType::get(t_double(), { t_double(), t_double() }, false),
+        llvm::GlobalValue::ExternalLinkage,
+        "pow",
+        *module
+      );
+    });
 
-    llvm::Function *printf_proto() {
-      auto printf = llvm::Function::Create(
-          llvm::FunctionType::get(t_int32(), { t_char_ptr() }, true),
-          llvm::GlobalValue::ExternalLinkage,
-          "printf",
-          module
-        );
-      printf->setCallingConv(llvm::CallingConv::C);
-      return printf;
-    }
+    auto ir_printf = declare_fn([]() {
+      return llvm::Function::Create(
+        llvm::FunctionType::get(t_int32(), { t_char_ptr() }, true),
+        llvm::GlobalValue::ExternalLinkage,
+        "printf",
+        *module
+      );
+    });
 
-    llvm::Function *main_proto() {
-      auto main = llvm::Function::Create(
-          llvm::FunctionType::get(t_int32(), {}, false),
-          llvm::GlobalValue::ExternalLinkage,
-          "main",
-          module
-        );
-      main->setCallingConv(llvm::CallingConv::C);
-      return main;
-    }
+    auto ir_main = declare_fn([]() {
+      return llvm::Function::Create(
+        llvm::FunctionType::get(t_int32(), {}, false),
+        llvm::GlobalValue::ExternalLinkage,
+        "main",
+        *module
+      );
+    });
 
     void init() {
-      auto main_fn = main_proto();
-      auto main_bl = llvm::BasicBlock::Create(context, "entry", main_fn);
-      builder.SetInsertPoint(main_bl);
+      auto main_bl = llvm::BasicBlock::Create(*context, "entry", ir_main());
+      builder->SetInsertPoint(main_bl);
     }
 
     void print(const char *format, std::initializer_list<llvm::Value*> values) {
-      static auto printf_fn = printf_proto();
-      auto ll_format = builder.CreateGlobalStringPtr(format);
+      auto ll_format = builder->CreateGlobalStringPtr(format);
       std::vector<llvm::Value*> args {ll_format};
       args.insert(args.end(), values);
-      builder.CreateCall(printf_fn, args);
+      builder->CreateCall(ir_printf(), args);
     }
 
     void wrap() {
-      builder.CreateRet(llvm::Constant::getNullValue(t_int32()));
-      llvm::verifyModule(module);
+      builder->CreateRet(llvm::Constant::getNullValue(t_int32()));
+      llvm::verifyModule(*module);
       std::error_code error;
       auto stream = new llvm::raw_fd_ostream("main.ll", error);
-      module.print(*stream, nullptr);
+      module->print(*stream, nullptr);
     }
 
     const std::map<parser::Operator, std::function<llvm::Value*(llvm::Value*, llvm::Value*)>> operator_to_fn {
-      {parser::Operator::And, [](auto a, auto b)
-        { return int_operator([](auto a_i, auto b_i) { return builder.CreateAnd(a_i, b_i); }, a, b); }},
-      {parser::Operator::Or, [](auto a, auto b)
-        { return int_operator([](auto a_i, auto b_i) { return builder.CreateOr(a_i, b_i); }, a, b); }},
-      {parser::Operator::Xor, [](auto a, auto b)
-        { return int_operator([](auto a_i, auto b_i) { return builder.CreateXor(a_i, b_i); }, a, b); }},
-      {parser::Operator::Rsh, [](auto a, auto b)
-        { return int_operator([](auto a_i, auto b_i) { return builder.CreateAShr(a_i, b_i); }, a, b); }},
-      {parser::Operator::Lsh, [](auto a, auto b)
-        { return int_operator([](auto a_i, auto b_i) { return builder.CreateShl(a_i, b_i); }, a, b); }},
-      {parser::Operator::Add, [](auto a, auto b) { return builder.CreateFAdd(a, b); }},
-      {parser::Operator::Sub, [](auto a, auto b) { return builder.CreateFSub(a, b); }},
-      {parser::Operator::Mul, [](auto a, auto b) { return builder.CreateFMul(a, b); }},
-      {parser::Operator::Div, [](auto a, auto b) { return builder.CreateFDiv(a, b); }},
-      {parser::Operator::Mod, [](auto a, auto b) { return builder.CreateFRem(a, b); }},
-      {parser::Operator::Exp, [](auto a, auto b) {
-        static auto pow_fn = pow_proto();
-        return builder.CreateCall(pow_fn, {a, b});
-      }}
+      {parser::Operator::And, [](auto a, auto b) { return as_int(CreateAnd,  a, b); }},
+      {parser::Operator::Or,  [](auto a, auto b) { return as_int(CreateOr,   a, b); }},
+      {parser::Operator::Xor, [](auto a, auto b) { return as_int(CreateXor,  a, b); }},
+      {parser::Operator::Rsh, [](auto a, auto b) { return as_int(CreateAShr, a, b); }},
+      {parser::Operator::Lsh, [](auto a, auto b) { return as_int(CreateShl,  a, b); }},
+      {parser::Operator::Add, [](auto a, auto b) { return builder->CreateFAdd(a, b); }},
+      {parser::Operator::Sub, [](auto a, auto b) { return builder->CreateFSub(a, b); }},
+      {parser::Operator::Mul, [](auto a, auto b) { return builder->CreateFMul(a, b); }},
+      {parser::Operator::Div, [](auto a, auto b) { return builder->CreateFDiv(a, b); }},
+      {parser::Operator::Mod, [](auto a, auto b) { return builder->CreateFRem(a, b); }},
+      {parser::Operator::Exp, [](auto a, auto b) { return builder->CreateCall(ir_pow(), {a, b}); }}
     };
   }
 
   bool compile(parser::TokenizedExpr &postfix) {
     init();
-
     llvm::Value* out;
     auto result = parser::eval<llvm::Value*>(
       postfix,
       out,
       [&](auto a) { return llvm::ConstantFP::get(t_double(), a); },
-      [&](auto a) { return builder.CreateFNeg(a); },
+      [&](auto a) { return builder->CreateFNeg(a); },
       [&](auto op, auto a, auto b) { return operator_to_fn.at(op)(a, b); });
     if (!result)
       return false;
@@ -421,7 +412,7 @@ namespace llir {
 
 int main() {
   printf("Enter math expression to be parsed:\n");
-  // ex: 5 * (6 + 2) - 12 / 4 + 2**4 + pi - e * 1.01e-1
+  // -1 + 5 * (6 + 2) - 12 / 4 + 2**4 + pi - e * 1.01e-1 - (1 << 5)
   std::string expr;
   std::getline(std::cin, expr);
 

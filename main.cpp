@@ -317,10 +317,10 @@ namespace llir {
     static const auto t_double = []() { return llvm::Type::getDoubleTy(context); };
 
     llvm::Value* int_operator(std::function<llvm::Value*(llvm::Value*, llvm::Value*)> fn, llvm::Value *a, llvm::Value *b) {
-      auto a_i = builder.CreateBitCast(a, t_int32());
-      auto b_i = builder.CreateBitCast(b, t_int32());
+      auto a_i = builder.CreateFPToSI(a, t_int32());
+      auto b_i = builder.CreateFPToSI(b, t_int32());
       auto r_i = fn(a_i, b_i);
-      return builder.CreateBitCast(r_i, t_double());
+      return builder.CreateSIToFP(r_i, t_double());
     }
 
     llvm::Function *pow_proto() {
@@ -388,7 +388,7 @@ namespace llir {
       {parser::Operator::Rsh, [](auto a, auto b)
         { return int_operator([](auto a_i, auto b_i) { return builder.CreateAShr(a_i, b_i); }, a, b); }},
       {parser::Operator::Lsh, [](auto a, auto b)
-        { return int_operator([](auto a_i, auto b_i) { return builder.CreateLShr(a_i, b_i); }, a, b); }},
+        { return int_operator([](auto a_i, auto b_i) { return builder.CreateShl(a_i, b_i); }, a, b); }},
       {parser::Operator::Add, [](auto a, auto b) { return builder.CreateFAdd(a, b); }},
       {parser::Operator::Sub, [](auto a, auto b) { return builder.CreateFSub(a, b); }},
       {parser::Operator::Mul, [](auto a, auto b) { return builder.CreateFMul(a, b); }},
@@ -409,7 +409,7 @@ namespace llir {
       postfix,
       out,
       [&](auto a) { return llvm::ConstantFP::get(t_double(), a); },
-      [&](auto a) { return builder.CreateNeg(a); },
+      [&](auto a) { return builder.CreateFNeg(a); },
       [&](auto op, auto a, auto b) { return operator_to_fn.at(op)(a, b); });
     if (!result)
       return false;

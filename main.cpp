@@ -256,17 +256,21 @@ namespace parser {
     return true;
   }
 
-  bool eval(TokenizedExpr &postfix, double &out) {
-    std::stack<double> result;
+  template<typename T>
+  bool eval(TokenizedExpr &postfix, T &out,
+      std::function<T(double)> mapper,
+      std::function<T(T)> negator,
+      std::function<T(Operator, T, T)> operator_fn) {
+    std::stack<T> result;
     while (!postfix.empty()) {
       auto token = postfix.front();
       postfix.pop_front();
       if (token->is_value())
-        result.push(token->get_value());
+        result.push(mapper(token->get_value()));
       else if (token->is_operator()) {
         if (result.size() == 1) {
           if (token->get_operator() == Operator::Sub) {
-            auto a = -result.top();
+            auto a = negator(result.top());
             result.pop();
             result.push(a);
             continue;
@@ -280,7 +284,7 @@ namespace parser {
         }
         auto a = result.top(); result.pop();
         auto b = result.top(); result.pop();
-        auto r = operator_to_fn.at(token->get_operator())(b, a);
+        auto r = operator_fn(token->get_operator(), b, a);
         result.push(r);
       }
     }
@@ -290,6 +294,14 @@ namespace parser {
     }
     out = result.top();
     return true;
+  }
+
+  bool eval(TokenizedExpr &postfix, double &out) {
+    return eval<double>(postfix, out,
+      [](auto a) { return a; },
+      [](auto a) { return -a; },
+      [](auto op, auto a, auto b) { return operator_to_fn.at(op)(a, b); }
+    );
   }
 }
 
@@ -392,40 +404,15 @@ namespace llir {
   bool compile(parser::TokenizedExpr &postfix) {
     init();
 
-    std::stack<llvm::Value*> result;
-    while (!postfix.empty()) {
-      auto token = postfix.front();
-      postfix.pop_front();
-      if (token->is_value()) {
-        auto value = llvm::ConstantFP::get(t_double(), token->get_value());
-        result.push(value);
-      } else if (token->is_operator()) {
-        if (result.size() == 1) {
-          if (token->get_operator() == parser::Operator::Sub) {
-            auto a = result.top();
-            auto b = builder.CreateNeg(a);
-            result.pop();
-            result.push(b);
-            continue;
-          }
-          if (token->get_operator() == parser::Operator::Add)
-            continue;
-        }
-        if (result.size() < 2) {
-          printf("Operators are mismatched\n");
-          return false;
-        }
-        auto a = result.top(); result.pop();
-        auto b = result.top(); result.pop();
-        auto r = operator_to_fn.at(token->get_operator())(b, a);
-        result.push(r);
-      }
-    }
-    if (result.size() != 1) {
-      printf("Operators are mismatched\n");
+    llvm::Value* out;
+    auto result = parser::eval<llvm::Value*>(
+      postfix,
+      out,
+      [&](auto a) { return llvm::ConstantFP::get(t_double(), a); },
+      [&](auto a) { return builder.CreateNeg(a); },
+      [&](auto op, auto a, auto b) { return operator_to_fn.at(op)(a, b); });
+    if (!result)
       return false;
-    }
-    auto out = result.top();
     print("Result: %.3lf\n", { out });
     wrap();
     return true;

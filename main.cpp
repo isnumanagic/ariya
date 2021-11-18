@@ -298,7 +298,6 @@ namespace llir {
     static llvm::LLVMContext context;
     static llvm::IRBuilder<llvm::NoFolder> builder(context);
     static llvm::Module module("main.ll", context);
-    static std::map<std::string, llvm::Value*> variables;
     
     static const auto t_char_ptr = []() { return llvm::Type::getInt8PtrTy(context); };
     static const auto t_int32 = []() { return llvm::Type::getInt32Ty(context); };
@@ -433,10 +432,9 @@ namespace llir {
   }
 }
 
-// 5 * (6 + 2) - 12 / 4 + 2**4 + pi - e * 1.01e-1
-
 int main() {
   printf("Enter math expression to be parsed:\n");
+  // ex: 5 * (6 + 2) - 12 / 4 + 2**4 + pi - e * 1.01e-1
   std::string expr;
   std::getline(std::cin, expr);
 

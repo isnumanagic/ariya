@@ -196,8 +196,14 @@ namespace parser {
       {"trunc", Function::Trunc}
     };
     const std::map<Function::Type, std::string> function_to_token = invert_map(token_to_function);
-    const std::string function_names = std::accumulate(token_to_function.begin(), token_to_function.end(), std::string(),
-      [](std::string a, auto b) { return (a.empty() ? "" : a + "|") + b.first; });
+    const std::string function_names = ([]() {
+      std::vector<std::string> name_v(token_to_function.size());
+      std::transform(token_to_function.begin(), token_to_function.end(), name_v.begin(),
+        [&](auto &kv) { return kv.first; });
+      std::sort(name_v.begin(), name_v.end(), [](auto &a, auto &b) { return a.length() > b.length(); });
+      return std::accumulate(name_v.begin(), name_v.end(), std::string(),
+        [](auto a, auto b) { return (a.empty() ? "" : a + "|") + b; });
+    })();
 
     const std::map<std::string, double> const_to_value {
       {"pi", M_PI},

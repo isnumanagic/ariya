@@ -149,7 +149,7 @@ namespace parser {
       {"/",  Operator::Div},
       {"%",  Operator::Rem},
       {"**", Operator::Exp},
-      {"-",  Operator::Not},
+      {"~",  Operator::Not},
       {"(",  Operator::Lbr},
       {")",  Operator::Rbr}
     };

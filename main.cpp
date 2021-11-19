@@ -28,27 +28,27 @@ static bool debug = false;
 
 namespace parser {
   namespace Operator {
-    #define op_id(id, precedence, arity) (((id) << 8) + ((precedence & 0xf) << 4) + ((arity) & 0xf))
+    #define op_id(precedence, arity) (((__COUNTER__) << 8) + ((precedence & 0xf) << 4) + ((arity) & 0xf))
     enum Type {
-      Noop = op_id( 0, 0, 0),
-      Sep  = op_id( 1, 1, 2),
-      And  = op_id( 2, 2, 2),
-      Or   = op_id( 3, 2, 2),
-      Xor  = op_id( 4, 2, 2),
-      Rsh  = op_id( 5, 3, 2),
-      Lsh  = op_id( 6, 3, 2),
-      Add  = op_id( 7, 4, 2),
-      Sub  = op_id( 8, 4, 2),
-      Mul  = op_id( 9, 5, 2),
-      Div  = op_id(10, 5, 2),
-      Rem  = op_id(11, 5, 2),
-      Exp  = op_id(12, 6, 2),
-      Not  = op_id(13, 7, 1),
-      Pos  = op_id(14, 7, 1),
-      Neg  = op_id(15, 7, 1),
-      Lbr  = op_id(16, 8, 0),
-      Rbr  = op_id(17, 8, 0),
-      Fn   = op_id(18, 8, 0)
+      Noop = op_id(0, 0),
+      Sep  = op_id(1, 2),
+      And  = op_id(2, 2),
+      Or   = op_id(2, 2),
+      Xor  = op_id(2, 2),
+      Rsh  = op_id(3, 2),
+      Lsh  = op_id(3, 2),
+      Add  = op_id(4, 2),
+      Sub  = op_id(4, 2),
+      Mul  = op_id(5, 2),
+      Div  = op_id(5, 2),
+      Rem  = op_id(5, 2),
+      Exp  = op_id(6, 2),
+      Not  = op_id(7, 1),
+      Pos  = op_id(7, 1),
+      Neg  = op_id(7, 1),
+      Lbr  = op_id(8, 0),
+      Rbr  = op_id(8, 0),
+      Fn   = op_id(8, 0)
     };
 
     static unsigned int id(Type op) {
@@ -69,37 +69,37 @@ namespace parser {
   }
 
   namespace Function {
-    #define fn_id(id, arity) (((id) << 4) + ((arity) & 0xf))
+    #define fn_id(arity) (((__COUNTER__) << 4) + ((arity) & 0xf))
     enum Type {
-      Pass  = fn_id( 0, 1),
-      Abs   = fn_id( 1, 1),
-      Acos  = fn_id( 2, 1),
-      Acosh = fn_id( 3, 1),
-      Asin  = fn_id( 4, 1),
-      Asinh = fn_id( 5, 1),
-      Atan  = fn_id( 6, 1),
-      Atanh = fn_id( 7, 1),
-      Atan2 = fn_id( 8, 2),
-      Cbrt  = fn_id( 9, 1),
-      Ceil  = fn_id(10, 1),
-      Cos   = fn_id(11, 1),
-      Cosh  = fn_id(12, 1),
-      Exp   = fn_id(13, 1),
-      Floor = fn_id(14, 1),
-      Round = fn_id(15, 1),
-      Hypot = fn_id(16, -1),
-      Log   = fn_id(17, 1),
-      Log2  = fn_id(18, 1),
-      Log10 = fn_id(19, 1),
-      Max   = fn_id(20, -1),
-      Min   = fn_id(21, -1),
-      Pow   = fn_id(22, 2),
-      Sin   = fn_id(23, 1),
-      Sinh  = fn_id(24, 1),
-      Sqrt  = fn_id(25, 1),
-      Tan   = fn_id(26, 1),
-      Tanh  = fn_id(27, 1),
-      Trunc = fn_id(28, 1)
+      Pass  = fn_id(1),
+      Abs   = fn_id(1),
+      Acos  = fn_id(1),
+      Acosh = fn_id(1),
+      Asin  = fn_id(1),
+      Asinh = fn_id(1),
+      Atan  = fn_id(1),
+      Atanh = fn_id(1),
+      Atan2 = fn_id(2),
+      Cbrt  = fn_id(1),
+      Ceil  = fn_id(1),
+      Cos   = fn_id(1),
+      Cosh  = fn_id(1),
+      Exp   = fn_id(1),
+      Floor = fn_id(1),
+      Round = fn_id(1),
+      Hypot = fn_id(-1),
+      Log   = fn_id(1),
+      Log2  = fn_id(1),
+      Log10 = fn_id(1),
+      Max   = fn_id(-1),
+      Min   = fn_id(-1),
+      Pow   = fn_id(2),
+      Sin   = fn_id(1),
+      Sinh  = fn_id(1),
+      Sqrt  = fn_id(1),
+      Tan   = fn_id(1),
+      Tanh  = fn_id(1),
+      Trunc = fn_id(1)
     };
 
     static unsigned int id(Type op) {
@@ -166,33 +166,33 @@ namespace parser {
     })();
 
     const std::map<std::string, Function::Type> token_to_function {
-      {"abs", Function::Abs},
-      {"acos", Function::Acos},
+      {"abs",   Function::Abs},
+      {"acos",  Function::Acos},
       {"acosh", Function::Acosh},
-      {"asin", Function::Asin},
+      {"asin",  Function::Asin},
       {"asinh", Function::Asinh},
-      {"atan", Function::Atan},
+      {"atan",  Function::Atan},
       {"atanh", Function::Atanh},
       {"atan2", Function::Atan2},
-      {"cbrt", Function::Cbrt},
-      {"ceil", Function::Ceil},
-      {"cos", Function::Cos},
-      {"cosh", Function::Cosh},
-      {"exp", Function::Exp},
+      {"cbrt",  Function::Cbrt},
+      {"ceil",  Function::Ceil},
+      {"cos",   Function::Cos},
+      {"cosh",  Function::Cosh},
+      {"exp",   Function::Exp},
       {"floor", Function::Floor},
       {"round", Function::Round},
       {"hypot", Function::Hypot},
-      {"log", Function::Log},
-      {"log2", Function::Log2},
+      {"log",   Function::Log},
+      {"log2",  Function::Log2},
       {"log10", Function::Log10},
-      {"max", Function::Max},
-      {"min", Function::Min},
-      {"pow", Function::Pow},
-      {"sin", Function::Sin},
-      {"sinh", Function::Sinh},
-      {"sqrt", Function::Sqrt},
-      {"tan", Function::Tan},
-      {"tanh", Function::Tanh},
+      {"max",   Function::Max},
+      {"min",   Function::Min},
+      {"pow",   Function::Pow},
+      {"sin",   Function::Sin},
+      {"sinh",  Function::Sinh},
+      {"sqrt",  Function::Sqrt},
+      {"tan",   Function::Tan},
+      {"tanh",  Function::Tanh},
       {"trunc", Function::Trunc}
     };
     const std::map<Function::Type, std::string> function_to_token = invert_map(token_to_function);
@@ -490,7 +490,8 @@ namespace parser {
   }
 
   template<typename T>
-  bool eval(TokenizedExpr &postfix, T &out,
+  bool eval(
+      TokenizedExpr &postfix, T &out,
       std::function<T(double)> mapper,
       std::function<T(Operator::Type, std::vector<T>&)> operator_exec,
       std::function<T(Function::Type, std::vector<T>&)> function_exec) {
@@ -530,11 +531,12 @@ namespace parser {
   }
 
   bool eval(TokenizedExpr &postfix, double &out) {
-    return eval<double>(postfix, out,
+    return eval<double>(
+      postfix,
+      out,
       [](auto a) { return a; },
       [&](auto op, auto &v) { return operator_exec.at(op)(v); },
-      [&](auto fn, auto &v) { return function_exec.at(fn)(v); }
-    );
+      [&](auto fn, auto &v) { return function_exec.at(fn)(v); });
   }
 }
 
@@ -549,18 +551,13 @@ namespace llir {
     static const auto t_int64 = []() { return llvm::Type::getInt64Ty(*context); };
     static const auto t_double = []() { return llvm::Type::getDoubleTy(*context); };
 
-    #define as_int(fn, a) ({                            \
-      auto a_i = builder->CreateFPToSI((a), t_int32()); \
-      auto r_i = builder->fn(a_i);                      \
-      builder->CreateSIToFP(r_i, t_double());           \
-    })
-
-    #define as_int2(fn, a, b) ({                        \
-      auto a_i = builder->CreateFPToSI((a), t_int32()); \
-      auto b_i = builder->CreateFPToSI((b), t_int32()); \
-      auto r_i = builder->fn(a_i, b_i);                 \
-      builder->CreateSIToFP(r_i, t_double());           \
-    })
+    llvm::Value* as_int(std::vector<llvm::Value*> &v, std::function<llvm::Value*(std::vector<llvm::Value*>&)> fn) {
+      std::vector<llvm::Value*> mapped(v.size());
+      for (int i = 0; i < v.size(); i++)
+        mapped[i] = builder->CreateFPToSI(v[i], t_int32());
+      auto i = fn(mapped);
+      return builder->CreateSIToFP(i, t_double());
+    }
 
     std::function<llvm::Function*()> declare_fn(std::function<llvm::Function*()> init) {
       llvm::Function *fn_ptr = nullptr;
@@ -659,22 +656,22 @@ namespace llir {
     }
 
     const std::map<parser::Operator::Type, parser::Function::nary<llvm::Value*>> operator_exec {
-      {parser::Operator::And, [](auto &v) { return as_int2(CreateAnd,  v[0], v[1]); }},
-      {parser::Operator::Or,  [](auto &v) { return as_int2(CreateOr,   v[0], v[1]); }},
-      {parser::Operator::Xor, [](auto &v) { return as_int2(CreateXor,  v[0], v[1]); }},
-      {parser::Operator::Rsh, [](auto &v) { return as_int2(CreateAShr, v[0], v[1]); }},
-      {parser::Operator::Lsh, [](auto &v) { return as_int2(CreateShl,  v[0], v[1]); }},
+      {parser::Operator::And, [](auto &v) { return as_int(v, [](auto &v) { return builder->CreateAnd (v[0], v[1]); }); }},
+      {parser::Operator::Or,  [](auto &v) { return as_int(v, [](auto &v) { return builder->CreateOr  (v[0], v[1]); }); }},
+      {parser::Operator::Xor, [](auto &v) { return as_int(v, [](auto &v) { return builder->CreateXor (v[0], v[1]); }); }},
+      {parser::Operator::Rsh, [](auto &v) { return as_int(v, [](auto &v) { return builder->CreateAShr(v[0], v[1]); }); }},
+      {parser::Operator::Lsh, [](auto &v) { return as_int(v, [](auto &v) { return builder->CreateShl (v[0], v[1]); }); }},
       {parser::Operator::Add, [](auto &v) { return builder->CreateFAdd(v[0], v[1]); }},
       {parser::Operator::Sub, [](auto &v) { return builder->CreateFSub(v[0], v[1]); }},
       {parser::Operator::Mul, [](auto &v) { return builder->CreateFMul(v[0], v[1]); }},
       {parser::Operator::Div, [](auto &v) { return builder->CreateFDiv(v[0], v[1]); }},
       {parser::Operator::Rem, [](auto &v) { return builder->CreateFRem(v[0], v[1]); }},
-      {parser::Operator::Exp, [](auto &v) { return builder->CreateCall(ir_math.at(parser::Function::Pow)(), {v[0], v[1]}); }},
-      {parser::Operator::Not, [](auto v) { return as_int(CreateNot, v[0]); }},
+      {parser::Operator::Exp, [](auto &v) { return builder->CreateCall(ir_math.at(parser::Function::Pow)(), v); }},
+      {parser::Operator::Not, [](auto v) { return as_int(v, [](auto &v) { return builder->CreateNot(v[0]); }); }},
       {parser::Operator::Pos, [](auto v) { return v[0]; }},
       {parser::Operator::Neg, [](auto v) { return builder->CreateFNeg(v[0]); }}
     };
-    std::map<parser::Function::Type, parser::Function::nary<llvm::Value*>> function_exec = ([]() {
+    const std::map<parser::Function::Type, parser::Function::nary<llvm::Value*>> function_exec = ([]() {
       std::map<parser::Function::Type, parser::Function::nary<llvm::Value*>> map;
       for (auto &kv : ir_math) {
         auto fn = kv.first;
@@ -719,8 +716,8 @@ int main(int argc, char *argv[]) {
   parse_args(argc, argv);
 
   printf("Enter math expression to be parsed:\n");
-  // i.e.: -1 + 5 * (6 + 2) - 12 / 4 + 2**4 + pi - e * 1.01e-1 - (1 << 5) + -hypot(1, -2, 3) * max(1, 2, min(4, 5))
-  // r: 7.900
+  // i: -1 + 5 * (6 + 2) - 12 / 4 + 2**4 + pi - e * 1.01e-1 - (1 << 5) + -hypot(1, -2, 3) * max(1, 2, min(4, 5))
+  // o: 7.900
   std::string expr;
   std::getline(std::cin, expr);
 

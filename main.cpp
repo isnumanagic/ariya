@@ -122,9 +122,6 @@ namespace parser {
         r = fn(r, v[i]);
       return r;
     }
-
-    template<typename T>
-    using binary_ptr = T(*)(const T, const T);
   }
 
   namespace {
@@ -239,7 +236,7 @@ namespace parser {
       {Function::Exp,   [](auto v) { return std::exp  (v[0]); }},
       {Function::Floor, [](auto v) { return std::floor(v[0]); }},
       {Function::Round, [](auto v) { return std::round(v[0]); }},
-      {Function::Hypot, [](auto v) { return Function::binary_reduce<double>(v, (Function::binary_ptr<double>)std::hypot); }},
+      {Function::Hypot, [](auto v) { return Function::binary_reduce<double>(v, [](auto a, auto b) { return std::hypot(a, b); }); }},
       {Function::Log,   [](auto v) { return std::log  (v[0]); }},
       {Function::Log2,  [](auto v) { return std::log2 (v[0]); }},
       {Function::Log10, [](auto v) { return std::log10(v[0]); }},

@@ -359,7 +359,7 @@ namespace parser {
   bool parse_infix(const std::string &expr, TokenizedExpr &infix) {
     static const std::regex token_rx(
         "((?:\\d+(?:\\.\\d*)?|\\.\\d+)(?:e[+-]?\\d+)?)|"
-        "([()]|\\*{2}|[-+~,\\/*|&^]|<<|>>)|"
+        "([()]|\\*{2}|[-+~,\\/*%|&^]|<<|>>)|"
         "(" + function_names + "(?=\\s*\\())|"
         "(e|pi)|"
         "(\\s+)|"

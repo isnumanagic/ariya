@@ -674,13 +674,12 @@ namespace llir {
         auto fn = kv.first;
         auto exec = kv.second;
         map[fn] = [&, exec](std::vector<llvm::Value*> &v) -> llvm::Value* {
-          const auto f = exec();
           if (v.empty())
             return llvm::Constant::getNullValue(t_double());
-          else if (v.size() <= 2)
-            return builder->CreateCall(f, v);
-          return parser::Function::binary_reduce<llvm::Value*>(v, [&](auto a, auto b)
-            { return builder->CreateCall(f, { a, b }); });
+          if (parser::Function::arity(fn) == -1)
+            return parser::Function::binary_reduce<llvm::Value*>(v, [&](auto a, auto b)
+              { return builder->CreateCall(exec(), { a, b }); });
+          return builder->CreateCall(exec(), v);
         };
       }
       return map;

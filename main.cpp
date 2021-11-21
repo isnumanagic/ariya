@@ -24,6 +24,11 @@
 #include <llvm/Support/raw_ostream.h>
 #include <llvm/Support/TargetSelect.h>
 
+#define l_1(fn) ([](auto a) { return fn(a); })
+#define l_2(fn) ([](auto a, auto b) { return fn(a, b); })
+#define v_1(fn) ([](auto &v) { return fn(v[0]); })
+#define v_2(fn) ([](auto &v) { return fn(v[0], v[1]); })
+
 static bool debug = false;
 
 namespace parser {
@@ -122,6 +127,8 @@ namespace parser {
         r = fn(r, v[i]);
       return r;
     }
+
+    #define r(type, fn) ([](auto &v) { return parser::Function::binary_reduce<type>(v, l_2(fn)); })
   }
 
   namespace {
@@ -196,7 +203,7 @@ namespace parser {
       {"trunc", Function::Trunc}
     };
     const std::map<Function::Type, std::string> function_to_token = invert_map(token_to_function);
-    const std::string function_names = ([]() {
+    const std::string function_pat = ([]() {
       std::vector<std::string> name_v(token_to_function.size());
       std::transform(token_to_function.begin(), token_to_function.end(), name_v.begin(),
         [&](auto &kv) { return kv.first; });
@@ -211,50 +218,50 @@ namespace parser {
     };
 
     const std::map<Operator::Type, Function::nary<double>> operator_exec {
-      {Operator::And, [](auto v) { return (int)v[0] & (int)v[1]; }},
-      {Operator::Or,  [](auto v) { return (int)v[0] | (int)v[1]; }},
-      {Operator::Xor, [](auto v) { return (int)v[0] ^ (int)v[1]; }},
-      {Operator::Rsh, [](auto v) { return (int)v[0] >> (int)v[1]; }},
-      {Operator::Lsh, [](auto v) { return (int)v[0] << (int)v[1]; }},
-      {Operator::Add, [](auto v) { return v[0] + v[1]; }},
-      {Operator::Sub, [](auto v) { return v[0] - v[1]; }},
-      {Operator::Mul, [](auto v) { return v[0] * v[1]; }},
-      {Operator::Div, [](auto v) { return v[0] / v[1]; }},
-      {Operator::Rem, [](auto v) { return fmod(v[0], v[1]); }},
-      {Operator::Exp, [](auto v) { return pow(v[0], v[1]); }},
-      {Operator::Not, [](auto v) { return ~(int)v[0]; }},
-      {Operator::Pos, [](auto v) { return v[0]; }},
-      {Operator::Neg, [](auto v) { return -v[0]; }}
+      {Operator::And, [](auto &v) { return (int)v[0] & (int)v[1]; }},
+      {Operator::Or,  [](auto &v) { return (int)v[0] | (int)v[1]; }},
+      {Operator::Xor, [](auto &v) { return (int)v[0] ^ (int)v[1]; }},
+      {Operator::Rsh, [](auto &v) { return (int)v[0] >> (int)v[1]; }},
+      {Operator::Lsh, [](auto &v) { return (int)v[0] << (int)v[1]; }},
+      {Operator::Add, [](auto &v) { return v[0] + v[1]; }},
+      {Operator::Sub, [](auto &v) { return v[0] - v[1]; }},
+      {Operator::Mul, [](auto &v) { return v[0] * v[1]; }},
+      {Operator::Div, [](auto &v) { return v[0] / v[1]; }},
+      {Operator::Rem, [](auto &v) { return fmod(v[0], v[1]); }},
+      {Operator::Exp, [](auto &v) { return pow(v[0], v[1]); }},
+      {Operator::Not, [](auto &v) { return ~(int)v[0]; }},
+      {Operator::Pos, [](auto &v) { return v[0]; }},
+      {Operator::Neg, [](auto &v) { return -v[0]; }}
     };
     std::map<Function::Type, Function::nary<double>> function_exec {
-      {Function::Abs,   [](auto v) { return std::abs  (v[0]); }},
-      {Function::Acos,  [](auto v) { return std::acos (v[0]); }},
-      {Function::Acosh, [](auto v) { return std::acosh(v[0]); }},
-      {Function::Asin,  [](auto v) { return std::asin (v[0]); }},
-      {Function::Asinh, [](auto v) { return std::asinh(v[0]); }},
-      {Function::Atan,  [](auto v) { return std::atan (v[0]); }},
-      {Function::Atanh, [](auto v) { return std::atanh(v[0]); }},
-      {Function::Atan2, [](auto v) { return std::atan2(v[0], v[1]); }},
-      {Function::Cbrt,  [](auto v) { return std::cbrt (v[0]); }},
-      {Function::Ceil,  [](auto v) { return std::ceil (v[0]); }},
-      {Function::Cos,   [](auto v) { return std::cos  (v[0]); }},
-      {Function::Cosh,  [](auto v) { return std::cosh (v[0]); }},
-      {Function::Exp,   [](auto v) { return std::exp  (v[0]); }},
-      {Function::Floor, [](auto v) { return std::floor(v[0]); }},
-      {Function::Round, [](auto v) { return std::round(v[0]); }},
-      {Function::Hypot, [](auto v) { return Function::binary_reduce<double>(v, [](auto a, auto b) { return std::hypot(a, b); }); }},
-      {Function::Log,   [](auto v) { return std::log  (v[0]); }},
-      {Function::Log2,  [](auto v) { return std::log2 (v[0]); }},
-      {Function::Log10, [](auto v) { return std::log10(v[0]); }},
-      {Function::Max,   [](auto v) { return Function::binary_reduce<double>(v, [](auto a, auto b) { return std::max(a, b); }); }},
-      {Function::Min,   [](auto v) { return Function::binary_reduce<double>(v, [](auto a, auto b) { return std::min(a, b); }); }},
-      {Function::Pow,   [](auto v) { return std::pow  (v[0], v[1]); }},
-      {Function::Sin,   [](auto v) { return std::sin  (v[0]); }},
-      {Function::Sinh,  [](auto v) { return std::sinh (v[0]); }},
-      {Function::Sqrt,  [](auto v) { return std::sqrt (v[0]); }},
-      {Function::Tan,   [](auto v) { return std::tan  (v[0]); }},
-      {Function::Tanh,  [](auto v) { return std::tanh (v[0]); }},
-      {Function::Trunc, [](auto v) { return std::trunc(v[0]); }}
+      {Function::Abs,   v_1(std::abs)},
+      {Function::Acos,  v_1(std::acos)},
+      {Function::Acosh, v_1(std::acosh)},
+      {Function::Asin,  v_1(std::asin)},
+      {Function::Asinh, v_1(std::asinh)},
+      {Function::Atan,  v_1(std::atan)},
+      {Function::Atan2, v_2(std::atan2)},
+      {Function::Atanh, v_1(std::atanh)},
+      {Function::Cbrt,  v_1(std::cbrt)},
+      {Function::Ceil,  v_1(std::ceil)},
+      {Function::Cos,   v_1(std::cos)},
+      {Function::Cosh,  v_1(std::cosh)},
+      {Function::Exp,   v_1(std::exp)},
+      {Function::Floor, v_1(std::floor)},
+      {Function::Hypot, r(double, std::hypot)},
+      {Function::Log,   v_1(std::log)},
+      {Function::Log10, v_1(std::log10)},
+      {Function::Log2,  v_1(std::log2)},
+      {Function::Max,   r(double, std::max)},
+      {Function::Min,   r(double, std::min)},
+      {Function::Pow,   v_2(std::pow)},
+      {Function::Round, v_1(std::round)},
+      {Function::Sin,   v_1(std::sin)},
+      {Function::Sinh,  v_1(std::sinh)},
+      {Function::Sqrt,  v_1(std::sqrt)},
+      {Function::Tan,   v_1(std::tan)},
+      {Function::Tanh,  v_1(std::tanh)},
+      {Function::Trunc, v_1(std::trunc)}
     };
   }
 
@@ -360,7 +367,7 @@ namespace parser {
     static const std::regex token_rx(
         "((?:\\d+(?:\\.\\d*)?|\\.\\d+)(?:e[+-]?\\d+)?)|"
         "([()]|\\*{2}|[-+~,\\/*%|&^]|<<|>>)|"
-        "(" + function_names + "(?=\\s*\\())|"
+        "(" + function_pat + "(?=\\s*\\())|"
         "(e|pi)|"
         "(\\s+)|"
         "(.)",
@@ -393,8 +400,7 @@ namespace parser {
               break;
             }
             case Token::Constant: {
-              transform(key.begin(), key.end(), key.begin(),
-                [](unsigned char c) { return tolower(c); });
+              std::transform(key.begin(), key.end(), key.begin(), l_1(std::tolower));
               auto value = const_to_value.at(key);
               token = std::make_shared<Token>(value);
               break;
@@ -559,6 +565,9 @@ namespace llir {
       return builder->CreateSIToFP(i, t_double());
     }
 
+    #define i_1(fn) ([](auto &v) { return as_int(v, v_1(fn)); })
+    #define i_2(fn) ([](auto &v) { return as_int(v, v_2(fn)); })
+
     std::function<llvm::Function*()> declare_fn(std::function<llvm::Function*()> init) {
       llvm::Function *fn_ptr = nullptr;
       return [=]() mutable {
@@ -579,12 +588,6 @@ namespace llir {
         );
       });
     }
-
-    int a = ([]() {
-      auto f = declare_math_fn("abs", 1);
-      f();
-      return 0;
-    })();
 
     const std::map<parser::Function::Type, std::function<llvm::Function*()>> ir_math {
       {parser::Function::Abs,   declare_math_fn("fabs",  1)},
@@ -656,20 +659,20 @@ namespace llir {
     }
 
     const std::map<parser::Operator::Type, parser::Function::nary<llvm::Value*>> operator_exec {
-      {parser::Operator::And, [](auto &v) { return as_int(v, [](auto &v) { return builder->CreateAnd (v[0], v[1]); }); }},
-      {parser::Operator::Or,  [](auto &v) { return as_int(v, [](auto &v) { return builder->CreateOr  (v[0], v[1]); }); }},
-      {parser::Operator::Xor, [](auto &v) { return as_int(v, [](auto &v) { return builder->CreateXor (v[0], v[1]); }); }},
-      {parser::Operator::Rsh, [](auto &v) { return as_int(v, [](auto &v) { return builder->CreateAShr(v[0], v[1]); }); }},
-      {parser::Operator::Lsh, [](auto &v) { return as_int(v, [](auto &v) { return builder->CreateShl (v[0], v[1]); }); }},
-      {parser::Operator::Add, [](auto &v) { return builder->CreateFAdd(v[0], v[1]); }},
-      {parser::Operator::Sub, [](auto &v) { return builder->CreateFSub(v[0], v[1]); }},
-      {parser::Operator::Mul, [](auto &v) { return builder->CreateFMul(v[0], v[1]); }},
-      {parser::Operator::Div, [](auto &v) { return builder->CreateFDiv(v[0], v[1]); }},
-      {parser::Operator::Rem, [](auto &v) { return builder->CreateFRem(v[0], v[1]); }},
+      {parser::Operator::And, i_2(builder->CreateAnd)},
+      {parser::Operator::Or,  i_2(builder->CreateOr)},
+      {parser::Operator::Xor, i_2(builder->CreateXor)},
+      {parser::Operator::Rsh, i_2(builder->CreateAShr)},
+      {parser::Operator::Lsh, i_2(builder->CreateShl)},
+      {parser::Operator::Add, v_2(builder->CreateFAdd)},
+      {parser::Operator::Sub, v_2(builder->CreateFSub)},
+      {parser::Operator::Mul, v_2(builder->CreateFMul)},
+      {parser::Operator::Div, v_2(builder->CreateFDiv)},
+      {parser::Operator::Rem, v_2(builder->CreateFRem)},
       {parser::Operator::Exp, [](auto &v) { return builder->CreateCall(ir_math.at(parser::Function::Pow)(), v); }},
-      {parser::Operator::Not, [](auto v) { return as_int(v, [](auto &v) { return builder->CreateNot(v[0]); }); }},
-      {parser::Operator::Pos, [](auto v) { return v[0]; }},
-      {parser::Operator::Neg, [](auto v) { return builder->CreateFNeg(v[0]); }}
+      {parser::Operator::Not, i_1(builder->CreateNot)},
+      {parser::Operator::Pos, [](auto &v) { return v[0]; }},
+      {parser::Operator::Neg, v_1(builder->CreateFNeg)}
     };
     const std::map<parser::Function::Type, parser::Function::nary<llvm::Value*>> function_exec = ([]() {
       std::map<parser::Function::Type, parser::Function::nary<llvm::Value*>> map;

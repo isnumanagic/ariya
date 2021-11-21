@@ -3,8 +3,6 @@ source_filename = "main.ll"
 
 @0 = private unnamed_addr constant [15 x i8] c"Result: %.3lf\0A\00", align 1
 
-declare double @abs(double)
-
 define i32 @main() {
 entry:
   %0 = fneg double 1.000000e+00
